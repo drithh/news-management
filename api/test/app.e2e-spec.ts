@@ -4,17 +4,14 @@ import * as request from 'supertest';
 import { AppModule } from '@/app.module';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Article } from '@/article/article.entity';
-import {
-  MESSAGE_QUEUE_PORT,
-  MessageQueuePort,
-} from '@/message-queue/message-queue.port';
+import { MESSAGE_QUEUE_PORT } from '@/message-queue/message-queue.port';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
   let articleRepo: any;
 
-  const mockMqService: MessageQueuePort = {
-    publishArticleJob: jest.fn().mockResolvedValue(undefined),
+  const mockMqService = {
+    publish: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeAll(async () => {
