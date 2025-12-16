@@ -68,7 +68,6 @@ export class ArticleService {
   }
 
   async findOne(id: string): Promise<Article> {
-    // Validate UUID format
     if (!isUUID(id)) {
       throw new BadRequestException('Invalid UUID');
     }

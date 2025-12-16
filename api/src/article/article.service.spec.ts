@@ -46,6 +46,7 @@ describe('ArticleService', () => {
           provide: MESSAGE_QUEUE_PORT,
           useValue: {
             publish: jest.fn(),
+            publishArticleCreated: jest.fn(),
           },
         },
       ],
@@ -68,19 +69,17 @@ describe('ArticleService', () => {
       jest.spyOn(repo, 'findOne').mockResolvedValue(null);
       jest.spyOn(repo, 'create').mockReturnValue(mockArticle);
       jest.spyOn(repo, 'save').mockResolvedValue(mockArticle);
-      jest.spyOn(mqService, 'publish').mockResolvedValue();
+      jest.spyOn(mqService, 'publishArticleCreated').mockResolvedValue();
 
       const result = await service.create(dto);
 
       expect(result).toEqual(mockArticle);
-      expect(mqService.publish).toHaveBeenCalledWith('news.created', {
-        type: 'news.created',
-        payload: {
-          id: mockArticle.id,
-          title: mockArticle.title,
-          content: mockArticle.content,
-          publishedAt: mockArticle.createdAt.toISOString(),
-        },
+      expect(mqService.publishArticleCreated).toHaveBeenCalledWith({
+        id: mockArticle.id,
+        title: mockArticle.title,
+        content: mockArticle.content,
+        source: mockArticle.source,
+        link: mockArticle.link,
       });
     });
 

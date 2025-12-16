@@ -5,6 +5,7 @@ module.exports = {
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
+  transformIgnorePatterns: ['node_modules/(?!uuid)/'],
   collectCoverageFrom: [
     '**/*.ts',
     '!**/*.module.ts',
@@ -15,8 +16,6 @@ module.exports = {
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
   moduleNameMapper: {
-    '^@/article/(.*)$': '<rootDir>/article/$1',
-    '^@/message-queue/(.*)$': '<rootDir>/message-queue/$1',
-    '^@/health/(.*)$': '<rootDir>/health/$1',
+    '^@/(.*)$': '<rootDir>/$1',
   },
 };
