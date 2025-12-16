@@ -17,6 +17,9 @@ export class RabbitmqService
   private readonly logger = new Logger(RabbitmqService.name);
   private connection: amqp.ChannelModel | null = null;
   private channel: amqp.Channel | null = null;
+  private readonly queues: Partial<Record<keyof EventMap, string>> = {
+    'news.created': 'news.created',
+  };
 
   constructor(private readonly configService: ConfigService) {
     super();
@@ -32,16 +35,14 @@ export class RabbitmqService
       this.connection = await amqp.connect(url);
       this.channel = await this.connection.createChannel();
 
-      const queue = this.configService.get<string>('ARTICLE_JOBS_QUEUE');
-      if (!queue) {
-        throw new Error('ARTICLE_JOBS_QUEUE is not configured');
-      }
-
       if (!this.channel) {
         throw new Error('RabbitMQ channel is not initialized');
       }
 
-      await this.channel.assertQueue(queue, { durable: true });
+      // Assert all queues from the routing map so they are ready for use
+      for (const queue of new Set(Object.values(this.queues))) {
+        await this.channel.assertQueue(queue, { durable: true });
+      }
 
       this.logger.log('Successfully connected to RabbitMQ');
     } catch (error) {
@@ -70,37 +71,30 @@ export class RabbitmqService
     event: EventMap[K]
   ): Promise<void> {
     try {
-      // Basic runtime guard: event type must match routing key
-      if (event.type !== routingKey) {
-        throw new Error(
-          `Event type mismatch. routingKey="${String(
-            routingKey
-          )}", event.type="${event.type}"`
-        );
-      }
-
       // Serialize event
       const content = Buffer.from(JSON.stringify(event));
-      const queue = this.configService.get<string>('ARTICLE_JOBS_QUEUE');
-      if (!queue) {
-        throw new Error('ARTICLE_JOBS_QUEUE is not configured');
-      }
-
       // Send to queue
       if (!this.channel) {
         throw new Error('RabbitMQ channel is not initialized');
       }
 
+      const queue = this.queues[routingKey];
+      if (!queue) {
+        throw new Error(
+          `No queue configured for routing key "${String(routingKey)}"`
+        );
+      }
+
       this.channel.sendToQueue(queue, content, {
         persistent: true,
         contentType: 'application/json',
-        type: event.type,
+        type: routingKey,
         headers: {
           routingKey,
         },
       });
 
-      this.logger.log(`Published event "${event.type}"`);
+      this.logger.log(`Published event "${routingKey}"`);
     } catch (error) {
       this.logger.error('Failed to publish message', error);
       throw new ServiceUnavailableException('Failed to queue job');

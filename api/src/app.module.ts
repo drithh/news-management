@@ -7,7 +7,6 @@ import { IdempotencyModule } from '@/idempotency/idempotency.module';
 import { KeyValueModule } from '@/key-value/key-value.module';
 import { MessageQueueModule } from '@/message-queue/message-queue.module';
 import { ArticleModule } from '@/article/article.module';
-import { SearchModule } from '@/search/search.module';
 
 @Module({
   imports: [
@@ -32,7 +31,6 @@ import { SearchModule } from '@/search/search.module';
     KeyValueModule,
     MessageQueueModule,
     ArticleModule,
-    SearchModule,
     HealthModule,
   ],
 })

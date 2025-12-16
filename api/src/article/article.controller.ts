@@ -20,6 +20,7 @@ import { ArticleService } from '@/article/article.service';
 import { CreateArticleDto } from '@/article/dto/create-article.dto';
 import { ArticleResponseDto } from '@/article/dto/article-response.dto';
 import { QueryArticlesDto } from '@/article/dto/query-articles.dto';
+import { Idempotent } from '@/idempotency/idempotent.decorator';
 
 @ApiTags('articles')
 @Controller('articles')
@@ -27,11 +28,18 @@ export class ArticleController {
   constructor(private readonly service: ArticleService) {}
 
   @Post()
+  @Idempotent({ ttl: 86400 }) // 24 hours
   @ApiOperation({ summary: 'Create a new article' })
   @HttpCode(HttpStatus.CREATED)
   @ApiCreatedResponse({
     description: 'Article created successfully',
     type: ArticleResponseDto,
+  })
+  @ApiHeader({
+    name: 'Idempotency-Key',
+    description: 'Unique key to ensure idempotent request processing',
+    required: false,
+    schema: { type: 'string' },
   })
   async create(@Body() dto: CreateArticleDto): Promise<ArticleResponseDto> {
     const article = await this.service.create(dto);
@@ -39,7 +47,7 @@ export class ArticleController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List articles from PostgreSQL' })
+  @ApiOperation({ summary: 'List articles' })
   @ApiOkResponse({
     description: 'List of articles with total count',
     type: ArticleResponseDto,

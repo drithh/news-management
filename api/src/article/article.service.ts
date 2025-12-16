@@ -37,14 +37,12 @@ export class ArticleService {
     await this.repo.save(article);
 
     // Publish event so other services (e.g. indexer) can react
-    await this.mqService.publish('news.created', {
-      type: 'news.created',
-      payload: {
-        id: article.id,
-        title: article.title,
-        content: article.content,
-        publishedAt: article.createdAt.toISOString(),
-      },
+    await this.mqService.publishArticleCreated({
+      id: article.id,
+      title: article.title,
+      content: article.content,
+      source: article.source,
+      link: article.link,
     });
 
     return article;

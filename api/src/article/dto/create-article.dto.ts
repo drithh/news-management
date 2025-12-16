@@ -29,9 +29,9 @@ export class CreateArticleDto {
   content: string;
 
   @ApiProperty({
-    description: 'Source of the article (e.g. twitter, manual, rss)',
+    description: 'Source of the article (e.g. twitter, google, rss)',
     maxLength: 200,
-    example: 'manual',
+    example: 'twitter',
   })
   @IsString()
   @IsNotEmpty()

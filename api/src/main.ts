@@ -1,9 +1,10 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from '@/app.module';
 
 async function bootstrap() {
+  const logger = new Logger(bootstrap.name);
   const app = await NestFactory.create(AppModule);
 
   // Enable validation
@@ -12,7 +13,7 @@ async function bootstrap() {
       whitelist: true,
       transform: true,
       forbidNonWhitelisted: true,
-    }),
+    })
   );
 
   // Set global prefix
@@ -31,11 +32,9 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
 
-  console.log(`🚀 API is running on: http://localhost:${port}/api`);
-  console.log(
-    `📚 OpenAPI docs available at: http://localhost:${port}/api/docs`,
-  );
+  logger.log(`API is running on: http://localhost:${port}/api`);
+
+  logger.log(`OpenAPI docs available at: http://localhost:${port}/api/docs`);
 }
 
 bootstrap();
-
