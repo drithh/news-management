@@ -25,8 +25,8 @@ describe('ArticleService', () => {
     content: 'Test content',
     source: 'test-source',
     link: 'https://example.com/test',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date('2025-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2025-01-01T00:00:00.000Z'),
   };
 
   beforeEach(async () => {
@@ -80,6 +80,8 @@ describe('ArticleService', () => {
         content: mockArticle.content,
         source: mockArticle.source,
         link: mockArticle.link,
+        createdAt: mockArticle.createdAt.toISOString(),
+        updatedAt: mockArticle.updatedAt.toISOString(),
       });
     });
 

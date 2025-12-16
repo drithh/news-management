@@ -7,7 +7,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as amqp from 'amqplib';
-import { EventMap, MessageQueuePort } from '@/message-queue/message-queue.port';
+import { v4 as uuidv4 } from 'uuid';
+import {
+  EventEnvelope,
+  EventMap,
+  MessageQueuePort,
+} from '@/message-queue/message-queue.port';
 
 @Injectable()
 export class RabbitmqService
@@ -71,9 +76,6 @@ export class RabbitmqService
     event: EventMap[K]
   ): Promise<void> {
     try {
-      // Serialize event
-      const content = Buffer.from(JSON.stringify(event));
-      // Send to queue
       if (!this.channel) {
         throw new Error('RabbitMQ channel is not initialized');
       }
@@ -85,16 +87,32 @@ export class RabbitmqService
         );
       }
 
+      // Wrap the event payload in a standard envelope
+      const envelope: EventEnvelope<EventMap[K]> = {
+        event: String(routingKey),
+        version: 1,
+        event_id: uuidv4(),
+        data: event,
+      };
+
+      const content = Buffer.from(JSON.stringify(envelope));
+
       this.channel.sendToQueue(queue, content, {
         persistent: true,
         contentType: 'application/json',
         type: routingKey,
+        messageId: envelope.event_id,
         headers: {
           routingKey,
+          event: envelope.event,
+          version: envelope.version,
+          event_id: envelope.event_id,
         },
       });
 
-      this.logger.log(`Published event "${routingKey}"`);
+      this.logger.log(
+        `Published event "${routingKey}" with id ${envelope.event_id}`
+      );
     } catch (error) {
       this.logger.error('Failed to publish message', error);
       throw new ServiceUnavailableException('Failed to queue job');

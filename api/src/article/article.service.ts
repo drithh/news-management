@@ -43,6 +43,8 @@ export class ArticleService {
       content: article.content,
       source: article.source,
       link: article.link,
+      createdAt: article.createdAt.toISOString(),
+      updatedAt: article.updatedAt.toISOString(),
     });
 
     return article;

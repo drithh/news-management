@@ -4,13 +4,25 @@ export interface NewsCreatedEvent {
   content: string;
   source: string;
   link: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Wrapper envelope for all domain events published to the message queue.
+ */
+export interface EventEnvelope<T> {
+  event: string;
+  version: number;
+  event_id: string;
+  data: T;
 }
 
 /**
  * Central place to declare all domain events that this service can publish.
  *
  * Each key is the routing key / event name, and the value is the
- * corresponding strongly typed event payload.
+ * corresponding strongly typed event payload (without envelope).
  */
 export interface EventMap {
   'news.created': NewsCreatedEvent;
