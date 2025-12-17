@@ -19,6 +19,7 @@ class RabbitMQConsumer(MessageConsumer):
         self,
         url: str,
         namespace: str,
+        events_exchange: str,
         queue_callbacks: Mapping[str, Callable[[bytes], bool]],
         max_retries: int = 3,
         initial_backoff_seconds: int = 1,
@@ -31,6 +32,7 @@ class RabbitMQConsumer(MessageConsumer):
         self._max_backoff = max_backoff_seconds
         self._backoff_multiplier = backoff_multiplier
         self._namespace = namespace
+        self._events_exchange = events_exchange
         self._queue_callbacks = queue_callbacks
 
     def _connect(self) -> pika.BlockingConnection:
@@ -187,6 +189,24 @@ class RabbitMQConsumer(MessageConsumer):
                     "x-dead-letter-exchange": dlx_name,
                     "x-dead-letter-routing-key": dlq_name,
                 },
+            )
+
+            
+            channel.exchange_declare(
+                exchange=self._events_exchange,
+                exchange_type="topic",
+                durable=True,
+            )
+            channel.queue_bind(
+                exchange=self._events_exchange,
+                queue=queue_name,
+                routing_key=queue_name,
+            )
+            logger.info(
+                "Bound queue '{}' to exchange '{}' with routing key '{}'",
+                queue_name,
+                self._events_exchange,
+                queue_name,
             )
 
             # Bind main queue to DLX so expired retry messages can route back

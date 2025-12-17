@@ -22,7 +22,7 @@ export class RabbitmqService
   private readonly logger = new Logger(RabbitmqService.name);
   private readonly exchange = 'news.events';
   private connection: amqp.ChannelModel | null = null;
-  private channel: amqp.Channel | null = null;
+  private channel: amqp.ConfirmChannel | null = null;
 
   constructor(private readonly configService: ConfigService) {
     super();
@@ -36,7 +36,7 @@ export class RabbitmqService
       }
 
       this.connection = await amqp.connect(url);
-      this.channel = await this.connection.createChannel();
+      this.channel = await this.connection.createConfirmChannel();
 
       if (!this.channel) {
         throw new Error('RabbitMQ channel is not initialized');
@@ -47,7 +47,9 @@ export class RabbitmqService
         durable: true,
       });
 
-      this.logger.log('Successfully connected to RabbitMQ');
+      this.logger.log(
+        'Successfully connected to RabbitMQ with publisher confirms'
+      );
     } catch (error) {
       this.logger.error('Failed to connect to RabbitMQ', error);
       throw error;
@@ -88,18 +90,38 @@ export class RabbitmqService
 
       const content = Buffer.from(JSON.stringify(envelope));
 
-      this.channel.publish(this.exchange, String(routingKey), content, {
-        persistent: true,
-        contentType: 'application/json',
-        type: routingKey,
-        messageId: envelope.event_id,
-        headers: {
-          routingKey,
-          event: envelope.event,
-          version: envelope.version,
-          event_id: envelope.event_id,
-        },
-      });
+      const published = this.channel.publish(
+        this.exchange,
+        String(routingKey),
+        content,
+        {
+          persistent: true,
+          contentType: 'application/json',
+          type: routingKey,
+          messageId: envelope.event_id,
+          headers: {
+            routingKey,
+            event: envelope.event,
+            version: envelope.version,
+            event_id: envelope.event_id,
+          },
+        }
+      );
+
+      // If publish returns false, the message was rejected by the broker
+      // (e.g., exchange doesn't exist, queue not bound, etc.)
+      if (!published) {
+        const error = new Error(
+          `Message was rejected by broker for event "${routingKey}"`
+        );
+        this.logger.error(
+          `Failed to publish event "${routingKey}" with id ${envelope.event_id}: message rejected by broker`
+        );
+        throw error;
+      }
+
+      // Wait for publisher confirmation
+      await this.channel.waitForConfirms();
 
       this.logger.log(
         `Published event "${routingKey}" with id ${envelope.event_id}`

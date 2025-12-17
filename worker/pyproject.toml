@@ -6,8 +6,6 @@ authors = ["Adriel <adrielalfeus@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [
-  # Expose the existing `src` package so imports like `src.elasticsearch_client`
-  # continue to work when installed via Poetry.
   { include = "src" }
 ]
 

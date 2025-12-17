@@ -41,6 +41,7 @@ def build_container(config: Config) -> Container:
     article_message_consumer = RabbitMQConsumer(
         config.RABBITMQ_URL,
         namespace="news",
+        events_exchange="news.events",
         queue_callbacks=queue_callbacks,
         max_retries=config.MAX_RETRIES,
         initial_backoff_seconds=config.INITIAL_BACKOFF_SECONDS,
