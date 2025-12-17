@@ -24,7 +24,6 @@ class ElasticsearchEngine(SearchEngine):
         es = self._get_client()
 
         if es.indices.exists(index=self._INDEX_NAME):
-            es.indices.delete(index=self._INDEX_NAME)
             return
 
         mapping = {

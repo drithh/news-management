@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HealthModule } from '@/health/health.module';
+import { SearchModule } from '@/search/search.module';
 import { RedisModule } from '@/redis/redis.module';
 import { IdempotencyModule } from '@/idempotency/idempotency.module';
 import { KeyValueModule } from '@/key-value/key-value.module';
@@ -32,6 +33,7 @@ import { ArticleModule } from '@/article/article.module';
     MessageQueueModule,
     ArticleModule,
     HealthModule,
+    SearchModule,
   ],
 })
 export class AppModule {}

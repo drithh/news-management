@@ -20,11 +20,9 @@ export class RabbitmqService
   implements OnModuleInit, OnModuleDestroy
 {
   private readonly logger = new Logger(RabbitmqService.name);
+  private readonly exchange = 'news.events';
   private connection: amqp.ChannelModel | null = null;
   private channel: amqp.Channel | null = null;
-  private readonly queues: Partial<Record<keyof EventMap, string>> = {
-    'news.created': 'news.created',
-  };
 
   constructor(private readonly configService: ConfigService) {
     super();
@@ -44,10 +42,10 @@ export class RabbitmqService
         throw new Error('RabbitMQ channel is not initialized');
       }
 
-      // Assert all queues from the routing map so they are ready for use
-      for (const queue of new Set(Object.values(this.queues))) {
-        await this.channel.assertQueue(queue, { durable: true });
-      }
+      // Declare the main exchange used for domain events
+      await this.channel.assertExchange(this.exchange, 'topic', {
+        durable: true,
+      });
 
       this.logger.log('Successfully connected to RabbitMQ');
     } catch (error) {
@@ -80,13 +78,6 @@ export class RabbitmqService
         throw new Error('RabbitMQ channel is not initialized');
       }
 
-      const queue = this.queues[routingKey];
-      if (!queue) {
-        throw new Error(
-          `No queue configured for routing key "${String(routingKey)}"`
-        );
-      }
-
       // Wrap the event payload in a standard envelope
       const envelope: EventEnvelope<EventMap[K]> = {
         event: String(routingKey),
@@ -97,7 +88,7 @@ export class RabbitmqService
 
       const content = Buffer.from(JSON.stringify(envelope));
 
-      this.channel.sendToQueue(queue, content, {
+      this.channel.publish(this.exchange, String(routingKey), content, {
         persistent: true,
         contentType: 'application/json',
         type: routingKey,
