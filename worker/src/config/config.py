@@ -1,8 +1,9 @@
 """Configuration management for the news worker."""
 
-import logging
+import sys
 from enum import Enum
 
+from loguru import logger
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -66,17 +67,27 @@ def load_config() -> Config:
     return Config()
 
 
-def setup_logger(level: LogLevel | str) -> logging.Logger:
-    """Configure and return the root application logger."""
+def setup_logger(level: LogLevel | str) -> None:
+    """Configure loguru logger with colored output."""
     if isinstance(level, LogLevel):
-        level_name = level.value
+        log_level = level.value
     else:
-        level_name = level
+        log_level = level
 
-    logging.basicConfig(
-        level=getattr(logging, level_name),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    # Remove default handler
+    logger.remove()
+    
+    # Add custom handler with formatting
+    logger.add(
+        sys.stdout,
+        level=log_level,
+        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+        "<level>{level: <8}</level> | "
+        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
+        "<level>{message}</level>",
+        colorize=True,
+        backtrace=True,
+        diagnose=True,
     )
-    return logging.getLogger("news-worker")
 
 

@@ -1,7 +1,7 @@
-import logging
 from collections.abc import Callable, Mapping
 
 import pika
+from loguru import logger
 from pika.adapters.blocking_connection import BlockingChannel
 from pika.spec import BasicProperties
 
@@ -18,7 +18,6 @@ class RabbitMQConsumer(MessageConsumer):
     def __init__(
         self,
         url: str,
-        logger: logging.Logger,
         namespace: str,
         queue_callbacks: Mapping[str, Callable[[bytes], bool]],
         max_retries: int = 3,
@@ -27,7 +26,6 @@ class RabbitMQConsumer(MessageConsumer):
         backoff_multiplier: float = 2.0,
     ) -> None:
         self._url = url
-        self._logger = logger
         self._max_retries = max_retries
         self._initial_backoff = initial_backoff_seconds
         self._max_backoff = max_backoff_seconds
@@ -39,10 +37,10 @@ class RabbitMQConsumer(MessageConsumer):
         try:
             params = pika.URLParameters(self._url)
             connection = pika.BlockingConnection(params)
-            self._logger.info("Connected to RabbitMQ")
+            logger.info("Connected to RabbitMQ")
             return connection
         except Exception as exc:
-            self._logger.error("Failed to connect to RabbitMQ: %s", exc)
+            logger.error("Failed to connect to RabbitMQ: {}", exc)
             raise
 
     def _calculate_backoff_delay(self, retry_count: int) -> int:
@@ -76,8 +74,8 @@ class RabbitMQConsumer(MessageConsumer):
             routing_key=dlq_name,
         )
         
-        self._logger.info(
-            "Set up DLX '%s' and DLQ '%s'", dlx_name, dlq_name
+        logger.info(
+            "Set up DLX '{}' and DLQ '{}'", dlx_name, dlq_name
         )
         return dlx_name, dlq_name
 
@@ -99,8 +97,8 @@ class RabbitMQConsumer(MessageConsumer):
             },
         )
 
-        self._logger.info(
-            "Set up retry queue '%s' for main queue '%s'",
+        logger.info(
+            "Set up retry queue '{}' for main queue '{}'",
             retry_queue,
             main_queue,
         )
@@ -118,8 +116,8 @@ class RabbitMQConsumer(MessageConsumer):
     ) -> None:
         if retry_count >= self._max_retries:
             # Max retries exceeded - route to DLQ
-            self._logger.error(
-                "Message exceeded max retries (%d), routing to DLQ",
+            logger.error(
+                "Message exceeded max retries ({}), routing to DLQ",
                 self._max_retries,
             )
             headers = {}
@@ -140,9 +138,9 @@ class RabbitMQConsumer(MessageConsumer):
             delay_ms = self._calculate_backoff_delay(retry_count)
             retry_queue = f"{queue_name}.retry"
 
-            self._logger.warning(
-                "Message failed (retry %d/%d), republishing to retry queue "
-                "with %dms delay",
+            logger.warning(
+                "Message failed (retry {}/{}), republishing to retry queue "
+                "with {}ms delay",
                 retry_count + 1,
                 self._max_retries,
                 delay_ms,
@@ -219,9 +217,9 @@ class RabbitMQConsumer(MessageConsumer):
                                 properties.headers[RETRY_COUNT_HEADER]
                             )
 
-                        self._logger.info(
-                            "Processing message from queue '%s': %s "
-                            "(retry %d/%d)",
+                        logger.info(
+                            "Processing message from queue '{}': {} "
+                            "(retry {}/{})",
                             q_name,
                             method.delivery_tag,
                             retry_count,
@@ -232,8 +230,8 @@ class RabbitMQConsumer(MessageConsumer):
 
                         if success:
                             ch.basic_ack(delivery_tag=method.delivery_tag)
-                            self._logger.info(
-                                "Message %s acknowledged", method.delivery_tag
+                            logger.info(
+                                "Message {} acknowledged", method.delivery_tag
                             )
                         else:
                             ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -247,8 +245,8 @@ class RabbitMQConsumer(MessageConsumer):
                                 dlq_name,
                             )
                     except MessageRequeueError as exc:
-                        self._logger.info(
-                            "Requeuing message %s immediately: %s",
+                        logger.info(
+                            "Requeuing message {} immediately: {}",
                             method.delivery_tag,
                             exc,
                         )
@@ -256,8 +254,8 @@ class RabbitMQConsumer(MessageConsumer):
                             delivery_tag=method.delivery_tag, requeue=True
                         )
                     except InvalidJobMessageError as exc:
-                        self._logger.error(
-                            "Invalid message %s, routing to DLQ: %s",
+                        logger.error(
+                            "Invalid message {}, routing to DLQ: {}",
                             method.delivery_tag,
                             exc,
                         )
@@ -287,8 +285,8 @@ class RabbitMQConsumer(MessageConsumer):
                                 properties.headers[RETRY_COUNT_HEADER]
                             )
 
-                        self._logger.exception(
-                            "Error in message callback for %s: %s",
+                        logger.exception(
+                            "Error in message callback for {}: {}",
                             method.delivery_tag,
                             exc,
                         )
@@ -313,21 +311,21 @@ class RabbitMQConsumer(MessageConsumer):
                 auto_ack=False,
             )
 
-            self._logger.info("Registered consumer for queue '%s'", queue_name)
+            logger.info("Registered consumer for queue '{}'", queue_name)
 
         queue_names = ", ".join(self._queue_callbacks.keys())
-        self._logger.info(
-            "Waiting for messages on queues: %s. Press CTRL+C to exit.",
+        logger.info(
+            "Waiting for messages on queues: {}. Press CTRL+C to exit.",
             queue_names,
         )
 
         try:
             channel.start_consuming()
         except KeyboardInterrupt:
-            self._logger.info("Shutting down worker...")
+            logger.info("Shutting down worker...")
             channel.stop_consuming()
         finally:
             connection.close()
-            self._logger.info("RabbitMQ connection closed")
+            logger.info("RabbitMQ connection closed")
 
 

@@ -24,24 +24,22 @@ class Container:
     idempotency_checker: IdempotencyChecker
 
 
-def build_container(config: Config, logger) -> Container:
+def build_container(config: Config) -> Container:
     """Construct and wire all dependencies."""
-    search_engine = ElasticsearchEngine(config.ELASTICSEARCH_URL, logger)
-    idempotency_repo = PostgresIdempotencyRepository(config.POSTGRES_URL, logger)
+    search_engine = ElasticsearchEngine(config.ELASTICSEARCH_URL)
+    idempotency_repo = PostgresIdempotencyRepository(config.POSTGRES_URL)
     idempotency_checker = PostgresIdempotencyChecker(
         repo=idempotency_repo,
-        logger=logger,
     )
 
-    article_service = ArticleService(search_engine, logger)
-    article_job_handler = ArticleJobHandler(article_service, idempotency_checker, logger)
+    article_service = ArticleService(search_engine)
+    article_job_handler = ArticleJobHandler(article_service, idempotency_checker)
 
     queue_callbacks = {
         'news.created': article_job_handler.handle_message
     }
     article_message_consumer = RabbitMQConsumer(
         config.RABBITMQ_URL,
-        logger,
         namespace="news",
         queue_callbacks=queue_callbacks,
         max_retries=config.MAX_RETRIES,

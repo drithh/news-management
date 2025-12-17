@@ -1,6 +1,8 @@
 import json
 from uuid import UUID
 
+from loguru import logger
+
 from src.app.article_service import ArticleService
 from src.domain.article import InvalidJobMessageError, MessageRequeueError
 from src.domain.idempotency.ports import IdempotencyChecker, IdempotencyStatus
@@ -13,11 +15,9 @@ class ArticleJobHandler:
         self,
         article_service: ArticleService,
         idempotency_checker: IdempotencyChecker,
-        logger,
     ) -> None:
         self._service = article_service
         self._idempotency = idempotency_checker
-        self._logger = logger
 
     def handle_message(self, body: bytes) -> bool:
         """Process a job message. Returns True if successfully handled.
@@ -59,14 +59,14 @@ class ArticleJobHandler:
             status = self._idempotency.check_and_claim(event_id, event_type)
 
             if status is IdempotencyStatus.COMPLETED:
-                self._logger.info("Event %s already processed; skipping", event_id)
+                logger.info("Event {} already processed; skipping", event_id)
                 return True
 
             if status is IdempotencyStatus.IN_PROGRESS:
                 # Another worker is currently handling this event. Raise exception
                 # to signal immediate requeue without counting as retry.
-                self._logger.info(
-                    "Event %s currently in progress elsewhere; requeuing",
+                logger.info(
+                    "Event {} currently in progress elsewhere; requeuing",
                     event_id,
                 )
                 raise MessageRequeueError(
@@ -80,7 +80,7 @@ class ArticleJobHandler:
             return True
 
         except (json.JSONDecodeError, InvalidJobMessageError) as exc:
-            self._logger.error("Invalid message: %s", exc)
+            logger.error("Invalid message: {}", exc)
             return False
         except Exception as exc:  
             try:
@@ -90,7 +90,7 @@ class ArticleJobHandler:
             except Exception:  
                 pass
 
-            self._logger.exception("Unexpected error handling message: %s", exc)
+            logger.exception("Unexpected error handling message: {}", exc)
             raise
 
     def _validate_message(self, message: dict) -> None:

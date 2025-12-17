@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from loguru import logger
+
 from src.infrastructure.postgres import get_connection
 
 
@@ -13,9 +15,8 @@ class IdempotencyRecord:
 
 
 class PostgresIdempotencyRepository:
-    def __init__(self, connection_url: str, logger) -> None:
+    def __init__(self, connection_url: str) -> None:
         self._connection_url = connection_url
-        self._logger = logger
 
     def _get_connection(self):
         return get_connection(self._connection_url)
@@ -35,8 +36,8 @@ class PostgresIdempotencyRepository:
                     )
                     row = cur.fetchone()
         except Exception as exc:
-            self._logger.error(
-                "Failed to fetch idempotency key %s/%s: %s",
+            logger.error(
+                "Failed to fetch idempotency key {}/{}: {}",
                 idempotency_key,
                 resource_path,
                 exc,
@@ -68,8 +69,8 @@ class PostgresIdempotencyRepository:
                     )
                     conn.commit()
         except Exception as exc:
-            self._logger.error(
-                "Failed to insert idempotency key %s/%s: %s",
+            logger.error(
+                "Failed to insert idempotency key {}/{}: {}",
                 idempotency_key,
                 resource_path,
                 exc,
@@ -90,8 +91,8 @@ class PostgresIdempotencyRepository:
                     )
                     conn.commit()
         except Exception as exc:
-            self._logger.error(
-                "Failed to update idempotency key %s/%s to %s: %s",
+            logger.error(
+                "Failed to update idempotency key {}/{} to {}: {}",
                 idempotency_key,
                 resource_path,
                 status,
@@ -112,8 +113,8 @@ class PostgresIdempotencyRepository:
                     )
                     conn.commit()
         except Exception as exc:
-            self._logger.error(
-                "Failed to delete idempotency key %s/%s: %s",
+            logger.error(
+                "Failed to delete idempotency key {}/{}: {}",
                 idempotency_key,
                 resource_path,
                 exc,

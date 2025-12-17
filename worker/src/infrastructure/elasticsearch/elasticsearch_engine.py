@@ -1,4 +1,5 @@
 from elasticsearch import Elasticsearch
+from loguru import logger
 
 from src.domain.article import Article
 from src.domain.search.ports import SearchEngine
@@ -7,13 +8,12 @@ from src.domain.search.ports import SearchEngine
 class ElasticsearchEngine(SearchEngine):
     _INDEX_NAME = "articles"
 
-    def __init__(self, url: str, logger):
+    def __init__(self, url: str):
         self._url = url
-        self._logger = logger
         try:
             self._client = Elasticsearch([url])
         except Exception as exc:
-            self._logger.error("Failed to connect to Elasticsearch: %s", exc)
+            logger.error("Failed to connect to Elasticsearch: {}", exc)
             raise
 
     def _get_client(self) -> Elasticsearch:
@@ -56,7 +56,7 @@ class ElasticsearchEngine(SearchEngine):
         }
 
         es.indices.create(index=self._INDEX_NAME, body=mapping)
-        self._logger.info("Created Elasticsearch index: %s", self._INDEX_NAME)
+        logger.info("Created Elasticsearch index: {}", self._INDEX_NAME)
 
     def index_article(self, article: Article) -> None:
         """Index an article document."""
@@ -75,10 +75,10 @@ class ElasticsearchEngine(SearchEngine):
 
         try:
             es.index(index=self._INDEX_NAME, id=str(article.id), document=doc)
-            self._logger.info("Indexed article %s in Elasticsearch", article.id)
+            logger.info("Indexed article {} in Elasticsearch", article.id)
         except Exception as exc:  # pragma: no cover - defensive logging
-            self._logger.error(
-                "Failed to index article %s in Elasticsearch: %s", article.id, exc
+            logger.error(
+                "Failed to index article {} in Elasticsearch: {}", article.id, exc
             )
             raise
 

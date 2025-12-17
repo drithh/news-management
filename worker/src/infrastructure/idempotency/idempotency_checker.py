@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from psycopg.errors import UniqueViolation
+from loguru import logger
 
 from src.domain.idempotency.ports import IdempotencyChecker, IdempotencyStatus
 from src.infrastructure.postgres.idempotency_repository import (
@@ -19,10 +20,8 @@ class PostgresIdempotencyChecker(IdempotencyChecker):
     def __init__(
         self,
         repo: PostgresIdempotencyRepository,
-        logger,
     ) -> None:
         self._repo = repo
-        self._logger = logger
 
     def check_and_claim(self, event_id: str, resource_key: str) -> IdempotencyStatus:
         """Check idempotency status and claim the key if new.
@@ -42,8 +41,8 @@ class PostgresIdempotencyChecker(IdempotencyChecker):
             self._repo.insert_in_progress(event_id, resource_key)
             return IdempotencyStatus.NEW
         except UniqueViolation:
-            self._logger.debug(
-                "Race condition for idempotency key %s/%s - already claimed",
+            logger.debug(
+                "Race condition for idempotency key {}/{} - already claimed",
                 event_id,
                 resource_key,
             )
