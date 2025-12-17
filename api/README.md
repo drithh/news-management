@@ -43,7 +43,7 @@ docker run -p 3000:3000 --env-file .env news-api
 1. **Install dependencies**
 
 ```bash
-bun install
+npm install
 ```
 
 2. **Set up environment variables**
@@ -63,7 +63,7 @@ RABBITMQ_URL=amqp://guest:guest@localhost:5672
 3. **Start the API**
 
 ```bash
-bun run start:dev
+npm run start:dev
 ```
 
 The API will be available at http://localhost:3000/api
@@ -132,6 +132,7 @@ curl -X POST http://localhost:3000/api/articles \
     "title": "Article Title",
     "content": "Article content here...",
     "source": "News Source",
+    "author": "Article Author",
     "link": "https://example.com/article"
   }'
 ```
@@ -200,19 +201,19 @@ Query parameters:
 
 ```bash
 # Install dependencies
-bun install
+npm install
 
 # Run unit tests
-bun test
+npm test
 
 # Run e2e tests
-bun test:e2e
+npm run test:e2e
 
 # Run tests with coverage
-bun test:cov
+npm run test:cov
 
 # Run tests in watch mode
-bun test:watch
+npm run test:watch
 ```
 
 ## API Endpoints
@@ -235,31 +236,3 @@ bun test:watch
 ## Documentation
 
 Swagger documentation is available at `/api/docs` when the API is running.
-
-## Troubleshooting
-
-### API won't start
-
-1. Check if required services are running:
-   - PostgreSQL
-   - Redis
-   - Elasticsearch
-   - RabbitMQ
-
-2. Verify environment variables in `.env` file
-
-3. Check logs:
-
-```bash
-docker-compose logs api
-```
-
-### Connection errors
-
-- Ensure all services are healthy: `docker-compose ps`
-- Check service URLs in `.env` file
-- Verify network connectivity between services
-
-### Port already in use
-
-Change the `PORT` environment variable or stop the service using port 3000.

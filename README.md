@@ -94,6 +94,77 @@ A Postman collection is included for easy API testing and exploration.
 - Search endpoints include example query parameters
 - Variables are pre-configured for easy environment switching
 
+## Testing Idempotency
+
+The system implements idempotency at two levels to prevent duplicate processing:
+
+### API-Level Idempotency
+
+The API uses the `Idempotency-Key` header to prevent duplicate article creation:
+
+- **Storage**: Redis (fast cache) + PostgreSQL (source of truth)
+- **TTL**: 24 hours (configurable)
+- **Behavior**:
+  - First request with a key: processes normally and caches the response
+  - Subsequent requests with the same key: returns cached response without processing
+  - Concurrent requests with the same key: returns 409 Conflict if one is in progress
+
+### Worker-Level Idempotency
+
+The worker uses `event_id` from RabbitMQ messages to prevent duplicate indexing:
+
+- **Storage**: PostgreSQL `idempotency_keys` table
+- **Behavior**:
+  - Checks if `event_id` was already processed (COMPLETED)
+  - If IN_PROGRESS, requeues the message (another worker is handling it)
+  - If NEW, claims the event, processes it, then marks it COMPLETED
+  - Ensures each article is indexed exactly once, even with multiple workers
+
+### Testing Idempotency
+
+Test both API and worker idempotency by creating the same article twice:
+
+```bash
+# First request - creates article and queues for indexing
+curl -X POST http://localhost:3000/api/articles \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: test-idempotency-123" \
+  -d '{
+    "title": "Idempotency Test",
+    "content": "Testing duplicate prevention",
+    "source": "Test Source",
+    "author": "Test Author",
+    "link": "https://example.com/idempotency-test"
+  }'
+
+# Second request with same idempotency key - should return cached response
+curl -X POST http://localhost:3000/api/articles \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: test-idempotency-123" \
+  -d '{
+    "title": "Idempotency Test",
+    "content": "Testing duplicate prevention",
+    "source": "Test Source",
+    "author": "Test Author",
+    "link": "https://example.com/idempotency-test"
+  }'
+```
+
+**Expected Results**:
+
+1. **API Response**:
+
+   - First request: Returns 201 Created with article ID
+   - Second request: Returns 201 Created with the **same** article ID (cached response)
+   - No duplicate article is created in the database
+   - Only one message is sent to RabbitMQ
+
+2. **Worker Behavior**:
+   - If a duplicate message somehow reaches the worker (e.g., RabbitMQ retries), it checks the `event_id`
+   - If already `COMPLETED`, the worker skips processing and logs: "Event {event_id} already processed; skipping"
+   - If multiple workers try to process the same message, only one will succeed and the others will be requeued.
+
+
 ## Environment Configuration
 
 When using Docker Compose, environment variables are automatically configured. For local development, see the README files in `api/` and `worker/` directories for detailed environment setup.

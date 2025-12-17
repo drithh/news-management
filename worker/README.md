@@ -123,10 +123,12 @@ When you create an article through the API, the worker will automatically receiv
 # Create an article
 curl -X POST http://localhost:3000/api/articles \
   -H "Content-Type: application/json" \
+  -H "Idempotency-Key: fecd8d47-ebe8-4f95-a462-2bcdce2bf1cd" \
   -d '{
     "title": "Test Article",
     "content": "Test content for worker processing",
     "source": "Test Source",
+    "author": "Test Author",
     "link": "https://example.com/test"
   }'
 ```
@@ -158,33 +160,54 @@ curl "http://localhost:9200/news/_search?q=title:Test&pretty"
 3. Check the `news.created` queue to see messages being processed
 4. Monitor message consumption and processing
 
-### 6. Test Idempotency
+### 6. Worker Idempotency
 
-Create the same article twice with the same link:
+The worker implements idempotency to prevent duplicate article indexing, even if the same message is processed multiple times or by multiple workers.
+
+> **For testing idempotency across both API and worker**, see the [Testing Idempotency](../README.md#testing-idempotency) section in the root README.
+
+#### How Worker Idempotency Works
+
+The worker uses PostgreSQL to track idempotency keys based on the `event_id` from RabbitMQ messages:
+
+1. **Idempotency Key**: Uses the `event_id` field from each RabbitMQ message as the unique identifier
+2. **Storage**: PostgreSQL `idempotency_keys` table tracks processing status
+3. **States**:
+   - **NEW**: Event hasn't been processed yet
+   - **IN_PROGRESS**: Event is currently being processed by a worker
+   - **COMPLETED**: Event was successfully processed
+
+#### Processing Flow
+
+When a message arrives:
+
+1. **Check Status**: Worker checks if the `event_id` exists in the idempotency table
+2. **If COMPLETED**: Message is skipped (already indexed) - logs "Event already processed; skipping"
+3. **If IN_PROGRESS**: Message is requeued immediately (another worker is handling it) - prevents concurrent processing
+4. **If NEW**: Worker claims the event by inserting `IN_PROGRESS`, processes the article, then marks it `COMPLETED`
+
+#### Concurrency Safety
+
+- Uses PostgreSQL unique constraints to handle race conditions when multiple workers try to claim the same event
+- If two workers try to claim simultaneously, only one succeeds; the other sees `IN_PROGRESS` and requeues
+- This ensures each article is indexed exactly once, even with multiple workers running
+
+#### Failure Handling
+
+- If processing fails, the idempotency record is deleted (marked as failed)
+- This allows the message to be retried on subsequent delivery
+- The retry mechanism will attempt to process the event again
+
+#### Verifying Worker Idempotency
+
+To verify that the worker is correctly handling duplicate messages:
 
 ```bash
-# First request
-curl -X POST http://localhost:3000/api/articles \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Duplicate Test",
-    "content": "Content",
-    "source": "Source",
-    "link": "https://example.com/duplicate"
-  }'
-
-# Second request (should be rejected by API, but if it goes through, worker should handle idempotency)
-curl -X POST http://localhost:3000/api/articles \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Duplicate Test",
-    "content": "Content",
-    "source": "Source",
-    "link": "https://example.com/duplicate"
-  }'
+# Check worker logs for idempotency handling
+docker-compose logs worker | grep -i "already processed"
 ```
 
-The worker should prevent duplicate indexing even if the message is processed multiple times.
+You should see log entries indicating duplicate events were detected and skipped when the same `event_id` is processed multiple times.
 
 ### 7. Monitor Worker Health
 
