@@ -49,4 +49,3 @@ export class SearchResponseDto {
   @ApiProperty({ required: false })
   took?: number;
 }
-

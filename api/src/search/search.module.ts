@@ -9,4 +9,3 @@ import { SearchController } from '@/search/search.controller';
   providers: [SearchService],
 })
 export class SearchModule {}
-
