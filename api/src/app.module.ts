@@ -21,7 +21,7 @@ import { ArticleModule } from '@/article/article.module';
         type: 'postgres',
         url: configService.get('POSTGRES_URL'),
         autoLoadEntities: true,
-        synchronize: configService.get('NODE_ENV') !== 'production',
+        synchronize: configService.get('NODE_ENV') === 'development',
         migrations: ['dist/migrations/*.js'],
         migrationsRun: true,
         logging: ['error', 'warn'],

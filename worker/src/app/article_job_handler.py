@@ -34,6 +34,7 @@ class ArticleJobHandler:
                 "title": "<title>",
                 "content": "<content>",
                 "source": "<source>",
+                "author": "<author>",
                 "link": "<link>",
                 "createdAt": "<iso8601>",
                 "updatedAt": "<iso8601>"
@@ -112,6 +113,7 @@ class ArticleJobHandler:
             "title",
             "content",
             "source",
+            "author",
             "link",
             "createdAt",
             "updatedAt",

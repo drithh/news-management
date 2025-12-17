@@ -60,6 +60,7 @@ interface ArticleSource {
   title: string;
   content: string;
   source: string;
+  author: string;
   link: string;
   created_at: string;
   updated_at: string;
@@ -131,7 +132,7 @@ export class SearchService {
     }
 
     if (source) {
-      filter.push({ term: { 'source.keyword': source } });
+      filter.push({ term: { 'source': source } });
     }
 
     if (from || to) {
@@ -160,7 +161,7 @@ export class SearchService {
       size: limit,
       aggs: {
         sources: {
-          terms: { field: 'source.keyword' },
+          terms: { field: 'source' },
         },
       },
     };
@@ -195,6 +196,7 @@ export class SearchService {
         title: src.title,
         content: src.content,
         source: src.source,
+        author: src.author,
         link: src.link,
         createdAt: src.created_at,
         updatedAt: src.updated_at,

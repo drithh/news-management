@@ -20,7 +20,7 @@ class ArticleService:
         """Index an article in Elasticsearch using event payload data.
 
         The event payload is expected to contain the full article row fields
-        (id, title, content, source, link, createdAt, updatedAt).
+        (id, title, content, source, author, link, createdAt, updatedAt).
         """
         logger.info("Indexing article {} from event", article_id)
 
@@ -29,6 +29,7 @@ class ArticleService:
             title=data["title"],
             content=data["content"],
             source=data["source"],
+            author=data["author"],
             link=data["link"],
             created_at=_parse_iso8601(data["createdAt"]),
             updated_at=_parse_iso8601(data["updatedAt"]),

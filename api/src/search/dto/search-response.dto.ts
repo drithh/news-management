@@ -14,6 +14,9 @@ class SearchArticleItemDto {
   source: string;
 
   @ApiProperty()
+  author: string;
+
+  @ApiProperty()
   link: string;
 
   @ApiProperty()

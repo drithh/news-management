@@ -9,6 +9,7 @@ class Article:
     title: str
     content: str
     source: str
+    author: str
     link: str
     created_at: datetime
     updated_at: datetime

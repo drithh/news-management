@@ -42,6 +42,7 @@ export class ArticleService {
       title: article.title,
       content: article.content,
       source: article.source,
+      author: article.author,
       link: article.link,
       createdAt: article.createdAt.toISOString(),
       updatedAt: article.updatedAt.toISOString(),
@@ -50,23 +51,30 @@ export class ArticleService {
     return article;
   }
 
-  async findAll(
-    query: QueryArticlesDto
-  ): Promise<{ articles: Article[]; total: number }> {
+  async findAll(query: QueryArticlesDto): Promise<{
+    articles: Article[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const whereConditions: FindOptionsWhere<Article> = {};
 
     if (query.source) {
       whereConditions.source = query.source;
     }
 
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+    const offset = (page - 1) * limit;
+
     const [articles, total] = await this.repo.findAndCount({
       where: whereConditions,
       order: { createdAt: query.sortOrder },
-      take: query.limit,
-      skip: query.offset,
+      take: limit,
+      skip: offset,
     });
 
-    return { articles, total };
+    return { articles, total, page, limit };
   }
 
   async findOne(id: string): Promise<Article> {

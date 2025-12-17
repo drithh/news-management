@@ -21,7 +21,7 @@ export class SearchQueryDto {
 
   @ApiPropertyOptional({
     description: 'Start date (ISO 8601)',
-    example: '2025-01-01T00:00:00.000Z',
+    example: '2025-12-01T00:00:00.000Z',
   })
   @IsOptional()
   @Type(() => Date)
@@ -29,7 +29,7 @@ export class SearchQueryDto {
 
   @ApiPropertyOptional({
     description: 'End date (ISO 8601)',
-    example: '2025-01-31T23:59:59.999Z',
+    example: '2025-12-31T23:59:59.999Z',
   })
   @IsOptional()
   @Type(() => Date)

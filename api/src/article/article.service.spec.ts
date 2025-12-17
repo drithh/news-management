@@ -24,6 +24,7 @@ describe('ArticleService', () => {
     title: 'Test Article',
     content: 'Test content',
     source: 'test-source',
+    author: 'Test Author',
     link: 'https://example.com/test',
     createdAt: new Date('2025-01-01T00:00:00.000Z'),
     updatedAt: new Date('2025-01-01T00:00:00.000Z'),
@@ -62,6 +63,7 @@ describe('ArticleService', () => {
       title: 'Test',
       content: 'Content',
       source: 'source',
+      author: 'Test Author',
       link: 'https://example.com/test',
     };
 
@@ -79,6 +81,7 @@ describe('ArticleService', () => {
         title: mockArticle.title,
         content: mockArticle.content,
         source: mockArticle.source,
+        author: mockArticle.author,
         link: mockArticle.link,
         createdAt: mockArticle.createdAt.toISOString(),
         updatedAt: mockArticle.updatedAt.toISOString(),
@@ -93,17 +96,78 @@ describe('ArticleService', () => {
   });
 
   describe('findAll', () => {
-    it('should return paginated articles', async () => {
+    it('should return paginated articles with page and limit', async () => {
       jest.spyOn(repo, 'findAndCount').mockResolvedValue([[mockArticle], 1]);
 
       const result = await service.findAll({
         limit: 10,
-        offset: 0,
+        page: 1,
         sortOrder: 'DESC',
       });
 
       expect(result.articles).toHaveLength(1);
       expect(result.total).toBe(1);
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(10);
+      expect(repo.findAndCount).toHaveBeenCalledWith({
+        where: {},
+        order: { createdAt: 'DESC' },
+        take: 10,
+        skip: 0,
+      });
+    });
+
+    it('should calculate offset correctly from page', async () => {
+      jest.spyOn(repo, 'findAndCount').mockResolvedValue([[], 0]);
+
+      await service.findAll({
+        limit: 20,
+        page: 3,
+        sortOrder: 'ASC',
+      });
+
+      expect(repo.findAndCount).toHaveBeenCalledWith({
+        where: {},
+        order: { createdAt: 'ASC' },
+        take: 20,
+        skip: 40, // (page 3 - 1) * limit 20 = 40
+      });
+    });
+
+    it('should filter by source when provided', async () => {
+      jest.spyOn(repo, 'findAndCount').mockResolvedValue([[mockArticle], 1]);
+
+      const result = await service.findAll({
+        limit: 10,
+        page: 1,
+        source: 'test-source',
+        sortOrder: 'DESC',
+      });
+
+      expect(result.articles).toHaveLength(1);
+      expect(repo.findAndCount).toHaveBeenCalledWith({
+        where: { source: 'test-source' },
+        order: { createdAt: 'DESC' },
+        take: 10,
+        skip: 0,
+      });
+    });
+
+    it('should use default values when page and limit are not provided', async () => {
+      jest.spyOn(repo, 'findAndCount').mockResolvedValue([[mockArticle], 1]);
+
+      const result = await service.findAll({
+        sortOrder: 'DESC',
+      });
+
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(20);
+      expect(repo.findAndCount).toHaveBeenCalledWith({
+        where: {},
+        order: { createdAt: 'DESC' },
+        take: 20,
+        skip: 0,
+      });
     });
   });
 

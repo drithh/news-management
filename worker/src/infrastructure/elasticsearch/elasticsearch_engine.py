@@ -24,6 +24,8 @@ class ElasticsearchEngine(SearchEngine):
         es = self._get_client()
 
         if es.indices.exists(index=self._INDEX_NAME):
+            # delete
+            # es.indices.delete(index=self._INDEX_NAME)
             return
 
         mapping = {
@@ -48,6 +50,7 @@ class ElasticsearchEngine(SearchEngine):
                         }
                     },
                     "source": {"type": "keyword"},
+                    "author": {"type": "keyword"},
                     "link": {"type": "keyword"},
                     "created_at": {"type": "date"},
                     "updated_at": {"type": "date"},
@@ -68,6 +71,7 @@ class ElasticsearchEngine(SearchEngine):
             "title": article.title,
             "content": article.content,
             "source": article.source,
+            "author": article.author,
             "link": article.link,
             "created_at": article.created_at.isoformat(),
             "updated_at": article.updated_at.isoformat(),

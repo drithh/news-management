@@ -7,6 +7,7 @@ export class ArticleResponseDto {
     this.title = article.title;
     this.content = article.content;
     this.source = article.source;
+    this.author = article.author;
     this.link = article.link;
     this.createdAt = article.createdAt.toISOString();
     this.updatedAt = article.updatedAt.toISOString();
@@ -26,6 +27,9 @@ export class ArticleResponseDto {
 
   @ApiProperty({ description: 'Source of the article' })
   source: string;
+
+  @ApiProperty({ description: 'Author of the article' })
+  author: string;
 
   @ApiProperty({ description: 'Canonical URL of the article' })
   link: string;

@@ -20,6 +20,9 @@ export class Article {
   @Column({ type: 'text' })
   source: string;
 
+  @Column({ type: 'text' })
+  author: string;
+
   @Column({ type: 'text', unique: true })
   link: string;
 
@@ -29,4 +32,3 @@ export class Article {
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 }
-

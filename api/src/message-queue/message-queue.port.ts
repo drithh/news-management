@@ -3,6 +3,7 @@ export interface NewsCreatedEvent {
   title: string;
   content: string;
   source: string;
+  author: string;
   link: string;
   createdAt: string;
   updatedAt: string;

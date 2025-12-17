@@ -25,15 +25,15 @@ export class QueryArticlesDto {
   limit?: number = 20;
 
   @ApiPropertyOptional({
-    description: 'Number of articles to skip (for pagination)',
-    minimum: 0,
-    default: 0,
+    description: 'Page number (1-indexed)',
+    minimum: 1,
+    default: 1,
   })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(0)
-  offset?: number = 0;
+  @Min(1)
+  page?: number = 1;
 
   @ApiPropertyOptional({
     description: 'Sort order for creation date',

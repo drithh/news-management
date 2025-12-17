@@ -40,6 +40,17 @@ export class CreateArticleDto {
   source: string;
 
   @ApiProperty({
+    description: 'Author of the article',
+    maxLength: 200,
+    example: 'John Doe',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
+  @MaxLength(200)
+  author: string;
+
+  @ApiProperty({
     description: 'Canonical URL of the article',
     example: 'https://example.com/articles/123',
   })
