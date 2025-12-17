@@ -1,6 +1,7 @@
 """Worker entry point using hexagonal architecture wiring."""
 
 from src.config.config import load_config, setup_logger
+from src.di.container import build_container
 
 
 def main() -> None:
@@ -9,6 +10,9 @@ def main() -> None:
     logger = setup_logger(config.LOG_LEVEL)
 
     logger.info("Starting worker...")
+    container = build_container(config, logger)
+
+    container.article_message_consumer.start_consuming()
 
 
 def start_consumer() -> None:

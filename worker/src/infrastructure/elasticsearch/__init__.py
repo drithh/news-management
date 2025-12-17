@@ -1,0 +1,2 @@
+"""Elasticsearch infrastructure adapter."""
+
