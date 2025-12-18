@@ -105,6 +105,57 @@ cp .env.example .env
 
 2. Update the values according to your setup
 
+## Database Migrations
+
+The API uses TypeORM for database migrations. Migrations are automatically run when the API starts in production mode (`migrationsRun: true`). For local development, you can run migrations manually.
+
+### Running Migrations
+
+**Run pending migrations**:
+
+```bash
+npm run migration:run
+```
+
+This will execute all pending migrations that haven't been applied yet.
+
+**Revert the last migration**:
+
+```bash
+npm run migration:revert
+```
+
+This will undo the most recently applied migration.
+
+### Creating Migrations
+
+**Generate a migration from entity changes**:
+
+```bash
+npm run migration:generate -- migrations/MigrationName
+```
+
+This will analyze your entities and generate a migration file with the necessary SQL changes.
+
+**Create an empty migration file**:
+
+```bash
+npm run migration:create -- migrations/MigrationName
+```
+
+This creates an empty migration file where you can write custom SQL if needed.
+
+### Migration Configuration
+
+- Migrations are stored in the `migrations/` directory
+- The migration configuration is in `src/typeorm.config.ts`
+- Migrations use the `POSTGRES_URL` environment variable for database connection
+- In development mode, `synchronize: true` is enabled, which auto-syncs schema (migrations are still recommended for production)
+
+### Note
+
+When using Docker Compose, migrations run automatically on API startup. For local development, ensure your database is running and `POSTGRES_URL` is correctly configured before running migrations.
+
 ## How to Test the API
 
 ### 1. Health Check
